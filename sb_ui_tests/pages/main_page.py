@@ -1,34 +1,44 @@
-from selenium.webdriver.common.by import By
+import allure
 from .base_page import BasePage
+from locators.main_locators import (
+    CONSTRUCTOR_LINK,
+    FEED_LINK,
+    LOGIN_LINK,
+    FIRST_INGREDIENT,
+    ING_MODAL,
+    ING_MODAL_CLOSE,
+)
 
 
 class MainPage(BasePage):
-    CONSTRUCTOR_LINK = (By.CSS_SELECTOR, 'a[href="/"]')
-    FEED_LINK = (By.CSS_SELECTOR, 'a[href="/feed"]')
-    LOGIN_LINK = (By.CSS_SELECTOR, 'a[href="/account"], a[href^="/login"]')
 
-    FIRST_INGREDIENT = (By.CSS_SELECTOR, 'ul.BurgerIngredients_ingredients__list__2A-mT a.BurgerIngredient_ingredient__1TVf6')
-    ING_MODAL = (By.CSS_SELECTOR, ".Modal_modal__P3_V5 .Modal_modal__container__Wo2l_")
-    ING_MODAL_CLOSE = (By.CSS_SELECTOR, '.Modal_modal__P3_V5 .Modal_modal__close__TnseK, .Modal_modal__P3_V5 button')
-
+    @allure.step("Open main page")
     def open_main(self):
         self.open("/")
 
+    @allure.step("Go to constructor")
     def goto_constructor(self):
-        self.click(self.CONSTRUCTOR_LINK)
+        self.click(CONSTRUCTOR_LINK)
 
+    @allure.step("Go to feed")
     def goto_feed(self):
-        self.click(self.FEED_LINK)
+        self.click(FEED_LINK)
 
+    @allure.step("Go to login")
     def goto_login(self):
-        self.click(self.LOGIN_LINK)
+        self.click(LOGIN_LINK)
 
+    @allure.step("Open first ingredient modal")
     def open_first_ingredient_modal(self):
-        self.click(self.FIRST_INGREDIENT)
-        self.visible(self.ING_MODAL)
+        self.click(FIRST_INGREDIENT)
+        self.visible(ING_MODAL)
 
+    @allure.step("Close ingredient modal")
     def close_modal(self):
         try:
-            self.click(self.ING_MODAL_CLOSE)
+            self.click(ING_MODAL_CLOSE)
         except Exception:
             self.press_escape()
+
+    def current_path(self) -> str:
+        return self.driver.current_url.replace(self.base_url, "")

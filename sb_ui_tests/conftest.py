@@ -2,9 +2,7 @@ import os
 import pytest
 import requests
 from utils.driver_factory import create_driver
-
-BASE_URL = os.getenv("SB_BASE_URL", "https://stellarburgers.education-services.ru").rstrip("/")
-API_BASE = os.getenv("SB_API_URL", "https://stellarburgers.education-services.ru").rstrip("/")
+from utils.urls import BASE_URL, AUTH_REGISTER, AUTH_LOGIN, AUTH_USER
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -15,6 +13,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session")
 def base_url():
+    # Простая фикстура для базового URL. Значение берём из data-модуля.
     return BASE_URL
 
 
@@ -29,44 +28,40 @@ def driver(request):
 
 @pytest.fixture
 def user_credentials():
-    import random, string
-    def rnd(n=8):
-        return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
-    email = f"{rnd()}@example.com"
-    password = rnd(12)
-    name = rnd(6)
-    return {"email": email, "password": password, "name": name}
+    from utils.helpers import random_credentials
+    return random_credentials()
 
 
 @pytest.fixture
 def logged_in_user(user_credentials):
-    reg = requests.post(f"{API_BASE}/api/auth/register", json=user_credentials)
-    assert reg.status_code in (200, 403)
-    login = requests.post(f"{API_BASE}/api/auth/login", json={"email": user_credentials["email"], "password": user_credentials["password"]})
-    assert login.status_code == 200
-    token = login.json().get("accessToken", "")
-    yield user_credentials
-    if token:
-        try:
-            requests.delete(f"{API_BASE}/api/auth/user", headers={"Authorization": token})
-        except Exception:
-            pass
+    # Предусловие: регистрируем и логиним пользователя; без assert, ошибки поймает тест
+    requests.post(AUTH_REGISTER, json=user_credentials)
+    login = requests.post(AUTH_LOGIN, json={"email": user_credentials["email"], "password": user_credentials["password"]})
+    token = login.json().get("accessToken", "") if login.ok else ""
+    try:
+        yield user_credentials
+    finally:
+        if token:
+            try:
+                requests.delete(AUTH_USER, headers={"Authorization": token})
+            except Exception:
+                pass
 
 
 @pytest.fixture
 def login_tokens(user_credentials):
-    reg = requests.post(f"{API_BASE}/api/auth/register", json=user_credentials)
-    assert reg.status_code in (200, 403)
-    login = requests.post(f"{API_BASE}/api/auth/login", json={"email": user_credentials["email"], "password": user_credentials["password"]})
-    assert login.status_code == 200
-    body = login.json()
+    requests.post(AUTH_REGISTER, json=user_credentials)
+    login = requests.post(AUTH_LOGIN, json={"email": user_credentials["email"], "password": user_credentials["password"]})
+    body = login.json() if login.ok else {}
     tokens = {"accessToken": body.get("accessToken", ""), "refreshToken": body.get("refreshToken", "")}
-    yield {"creds": user_credentials, "tokens": tokens}
-    if tokens.get("accessToken"):
-        try:
-            requests.delete(f"{API_BASE}/api/auth/user", headers={"Authorization": tokens["accessToken"]})
-        except Exception:
-            pass
+    try:
+        yield {"creds": user_credentials, "tokens": tokens}
+    finally:
+        if tokens.get("accessToken"):
+            try:
+                requests.delete(AUTH_USER, headers={"Authorization": tokens["accessToken"]})
+            except Exception:
+                pass
 
 
 @pytest.fixture

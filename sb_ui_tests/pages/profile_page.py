@@ -1,27 +1,32 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+import allure
 from .base_page import BasePage
+from locators.profile_locators import HISTORY_TAB, LOGOUT_BUTTON
 
 
 class ProfilePage(BasePage):
-    HISTORY_TAB = (By.CSS_SELECTOR, "a[href='/account/order-history'], a[href*='order-history'], a[href$='/account/history'], a[href*='history']")
-    LOGOUT_BUTTON = (By.XPATH, "//button[contains(., 'Выход') or contains(., 'Log out')]")
 
+    @allure.step("Open profile page")
     def open_profile(self):
         self.open("/account/profile")
 
+    @allure.step("Go to order history")
     def goto_history(self):
         try:
-            self.click(self.HISTORY_TAB)
+            self.click(HISTORY_TAB)
         except Exception:
             self.open("/account/order-history")
-        self.wait.until(EC.url_contains("/account/order-history"))
+        # URL wait via base
+        self.wait.until(lambda d: "/account/order-history" in d.current_url)
 
+    @allure.step("Logout")
     def logout(self):
         try:
-            self.click(self.LOGOUT_BUTTON)
+            self.click(LOGOUT_BUTTON)
         except Exception:
             # Fallback: clear tokens and navigate to login
             self.driver.execute_script("window.localStorage.removeItem('accessToken'); window.localStorage.removeItem('refreshToken');")
             self.open("/login")
-        self.wait.until(EC.url_contains("/login"))
+        self.wait.until(lambda d: "/login" in d.current_url)
+
+    def current_path(self) -> str:
+        return self.driver.current_url.replace(self.base_url, "")

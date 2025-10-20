@@ -1,15 +1,27 @@
-from selenium.webdriver.common.by import By
+import allure
 from .base_page import BasePage
+from locators.feed_locators import COUNTER_TOTAL, COUNTER_TODAY, FIRST_ORDER, ORDER_MODAL
 
 
 class FeedPage(BasePage):
-    COUNTER_TOTAL = (By.CSS_SELECTOR, "[data-test='counter-total'], [class*='totalCounter']")
-    COUNTER_TODAY = (By.CSS_SELECTOR, "[data-test='counter-today'], [class*='todayCounter']")
-    FIRST_ORDER = (By.CSS_SELECTOR, "a[href*='/feed/']:not([href$='/feed'])")
-    ORDER_MODAL = (By.CSS_SELECTOR, "[data-order-modal], [role='dialog']")
 
+    @allure.step("Open feed page")
     def open_feed(self):
         self.open("/feed")
 
+    @allure.step("Open first order from feed")
     def open_first_order(self):
-        self.click(self.FIRST_ORDER)
+        self.click(FIRST_ORDER)
+        # дождаться перехода на страницу заказа или появления модалки
+        try:
+            self.visible(ORDER_MODAL)
+        except Exception:
+            self.wait_url_contains("/feed/")
+
+    def is_order_modal_visible(self) -> bool:
+        return self.exists(ORDER_MODAL)
+
+    def get_counters(self) -> tuple[str, str]:
+        total = self.visible(COUNTER_TOTAL).text
+        today = self.visible(COUNTER_TODAY).text
+        return total, today
