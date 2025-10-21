@@ -10,3 +10,4 @@ ING_MODAL = (By.CSS_SELECTOR, ".Modal_modal__P3_V5 .Modal_modal__container__Wo2l
 ING_MODAL_CLOSE = (By.CSS_SELECTOR, '.Modal_modal__P3_V5 .Modal_modal__close__TnseK, .Modal_modal__P3_V5 button')
 
 
+

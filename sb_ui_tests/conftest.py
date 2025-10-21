@@ -11,10 +11,7 @@ def pytest_addoption(parser):
     parser.addoption("--headless", action="store_true", default=os.getenv("HEADLESS", "false").lower() == "true")
 
 
-@pytest.fixture(scope="session")
-def base_url():
-    # Простая фикстура для базового URL. Значение берём из data-модуля.
-    return BASE_URL
+# base_url не как фикстура: импортируйте BASE_URL из utils.urls в тестах/страницах
 
 
 @pytest.fixture
@@ -34,42 +31,41 @@ def user_credentials():
 
 @pytest.fixture
 def logged_in_user(user_credentials):
-    # Предусловие: регистрируем и логиним пользователя; без assert, ошибки поймает тест
+    # Предусловие: регистрируем и логиним пользователя
     requests.post(AUTH_REGISTER, json=user_credentials)
     login = requests.post(AUTH_LOGIN, json={"email": user_credentials["email"], "password": user_credentials["password"]})
     token = login.json().get("accessToken", "") if login.ok else ""
-    try:
-        yield user_credentials
-    finally:
-        if token:
-            try:
-                requests.delete(AUTH_USER, headers={"Authorization": token})
-            except Exception:
-                pass
+    yield user_credentials
+    if token:
+        try:
+            requests.delete(AUTH_USER, headers={"Authorization": token})
+        except Exception:
+            pass
 
 
 @pytest.fixture
-def login_tokens(user_credentials):
+def authorized_session(user_credentials):
+    # Регистрируем/логиним и возвращаем токены вместе с кредами
     requests.post(AUTH_REGISTER, json=user_credentials)
     login = requests.post(AUTH_LOGIN, json={"email": user_credentials["email"], "password": user_credentials["password"]})
     body = login.json() if login.ok else {}
     tokens = {"accessToken": body.get("accessToken", ""), "refreshToken": body.get("refreshToken", "")}
-    try:
-        yield {"creds": user_credentials, "tokens": tokens}
-    finally:
-        if tokens.get("accessToken"):
-            try:
-                requests.delete(AUTH_USER, headers={"Authorization": tokens["accessToken"]})
-            except Exception:
-                pass
+    yield {"creds": user_credentials, "tokens": tokens}
+    if tokens.get("accessToken"):
+        try:
+            requests.delete(AUTH_USER, headers={"Authorization": tokens["accessToken"]})
+        except Exception:
+            pass
 
 
 @pytest.fixture
-def authorized_session(driver, base_url, login_tokens):
-    driver.get(base_url)
-    access = login_tokens["tokens"].get("accessToken", "")
-    refresh = login_tokens["tokens"].get("refreshToken", "")
+def web_authorized_session(driver, authorized_session):
+    # Прокидываем токены в localStorage и обновляем страницу
+    from utils.urls import BASE_URL
+    driver.get(BASE_URL)
+    access = authorized_session["tokens"].get("accessToken", "")
+    refresh = authorized_session["tokens"].get("refreshToken", "")
     driver.execute_script("window.localStorage.setItem('accessToken', arguments[0]);", access)
     driver.execute_script("window.localStorage.setItem('refreshToken', arguments[0]);", refresh)
     driver.refresh()
-    return login_tokens
+    return authorized_session

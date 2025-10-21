@@ -4,6 +4,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import allure
+from locators.login_locators import SUBMIT as BTN_SUBMIT
+from locators.main_locators import ING_MODAL_CLOSE as MODAL_CLOSE_BTN
+from locators.login_locators import PASSWORD as PASSWORD_INPUT
 
 
 class BasePage:
@@ -57,7 +60,8 @@ class BasePage:
     @allure.step("Accept cookies if present")
     def accept_cookies(self):
         try:
-            btn = self.driver.find_element(By.XPATH, "//button[contains(., 'Принять') or contains(., 'Accept') or contains(., 'Ясно')]")
+            # общий кнопочный селектор из локаторов: переиспользуем primary submit как универсальную кнопку согласия
+            btn = self.wait.until(EC.element_to_be_clickable(BTN_SUBMIT))
             self.driver.execute_script("arguments[0].click();", btn)
         except Exception:
             pass
@@ -65,12 +69,8 @@ class BasePage:
     @allure.step("Close all modals if present")
     def close_all_modals(self):
         try:
-            close_btns = self.driver.find_elements(By.CSS_SELECTOR, ".Modal_modal__P3_V5 button")
-            for btn in close_btns:
-                try:
-                    self.driver.execute_script("arguments[0].click();", btn)
-                except Exception:
-                    pass
+            btn = self.wait.until(EC.presence_of_element_located(MODAL_CLOSE_BTN))
+            self.driver.execute_script("arguments[0].click();", btn)
         except Exception:
             pass
 
@@ -83,3 +83,7 @@ class BasePage:
     @allure.step("Wait URL contains: {part}")
     def wait_url_contains(self, part: str):
         self.wait.until(lambda d: part in d.current_url)
+
+    @allure.step("Get active element attribute {attr}")
+    def get_active_element_attr(self, attr: str) -> str:
+        return self.driver.execute_script(f"return document.activeElement.getAttribute('{attr}')") or ""

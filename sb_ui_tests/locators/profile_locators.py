@@ -5,3 +5,4 @@ HISTORY_TAB = (By.CSS_SELECTOR, "a[href='/account/order-history'], a[href*='orde
 LOGOUT_BUTTON = (By.XPATH, "//button[contains(., 'Выход') or contains(., 'Log out')]")
 
 
+

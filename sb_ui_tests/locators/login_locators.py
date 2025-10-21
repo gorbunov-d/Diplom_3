@@ -8,3 +8,4 @@ FORGOT_LINK = (By.CSS_SELECTOR, 'a[href="/forgot-password"]')
 TOGGLE_PASSWORD = (By.CSS_SELECTOR, ".input__icon.input__icon-action, .input__icon-action")
 
 
+
