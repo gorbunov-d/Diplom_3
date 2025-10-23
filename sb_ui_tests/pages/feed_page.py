@@ -11,12 +11,11 @@ class FeedPage(BasePage):
 
     @allure.step("Open first order from feed")
     def open_first_order(self):
-        self.click(FIRST_ORDER)
-        # дождаться перехода на страницу заказа или появления модалки
-        try:
-            self.visible(ORDER_MODAL)
-        except Exception:
-            self.wait_url_contains("/feed/")
+        # Дожидаемся видимости первого заказа и кликаем через базовый helper
+        self.visible(FIRST_ORDER)
+        self.js_click(FIRST_ORDER)
+        # Единый ожидаемый результат: переход на страницу заказа
+        self.wait_url_contains("/feed/")
 
     def is_order_modal_visible(self) -> bool:
         return self.exists(ORDER_MODAL)

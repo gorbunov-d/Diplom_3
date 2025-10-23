@@ -3,6 +3,7 @@ import pytest
 import requests
 from utils.driver_factory import create_driver
 from utils.urls import BASE_URL, AUTH_REGISTER, AUTH_LOGIN, AUTH_USER
+from utils.helpers import random_credentials
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -24,18 +25,13 @@ def driver(request):
 
 
 @pytest.fixture
-def user_credentials():
-    from utils.helpers import random_credentials
-    return random_credentials()
-
-
-@pytest.fixture
-def logged_in_user(user_credentials):
+def logged_in_user():
     # Предусловие: регистрируем и логиним пользователя
-    requests.post(AUTH_REGISTER, json=user_credentials)
-    login = requests.post(AUTH_LOGIN, json={"email": user_credentials["email"], "password": user_credentials["password"]})
+    creds = random_credentials()
+    requests.post(AUTH_REGISTER, json=creds)
+    login = requests.post(AUTH_LOGIN, json={"email": creds["email"], "password": creds["password"]})
     token = login.json().get("accessToken", "") if login.ok else ""
-    yield user_credentials
+    yield creds
     if token:
         try:
             requests.delete(AUTH_USER, headers={"Authorization": token})
@@ -44,13 +40,14 @@ def logged_in_user(user_credentials):
 
 
 @pytest.fixture
-def authorized_session(user_credentials):
+def authorized_session():
     # Регистрируем/логиним и возвращаем токены вместе с кредами
-    requests.post(AUTH_REGISTER, json=user_credentials)
-    login = requests.post(AUTH_LOGIN, json={"email": user_credentials["email"], "password": user_credentials["password"]})
+    creds = random_credentials()
+    requests.post(AUTH_REGISTER, json=creds)
+    login = requests.post(AUTH_LOGIN, json={"email": creds["email"], "password": creds["password"]})
     body = login.json() if login.ok else {}
     tokens = {"accessToken": body.get("accessToken", ""), "refreshToken": body.get("refreshToken", "")}
-    yield {"creds": user_credentials, "tokens": tokens}
+    yield {"creds": creds, "tokens": tokens}
     if tokens.get("accessToken"):
         try:
             requests.delete(AUTH_USER, headers={"Authorization": tokens["accessToken"]})
@@ -61,7 +58,6 @@ def authorized_session(user_credentials):
 @pytest.fixture
 def web_authorized_session(driver, authorized_session):
     # Прокидываем токены в localStorage и обновляем страницу
-    from utils.urls import BASE_URL
     driver.get(BASE_URL)
     access = authorized_session["tokens"].get("accessToken", "")
     refresh = authorized_session["tokens"].get("refreshToken", "")

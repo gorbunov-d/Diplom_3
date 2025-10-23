@@ -19,8 +19,6 @@ class BasePage:
     def open(self, path: str = "/"):
         self.driver.get(f"{self.base_url}{path}")
         self.wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-        self.accept_cookies()
-        self.close_all_modals()
 
     @allure.step("Click element")
     def click(self, locator: tuple[By, str]):
@@ -41,9 +39,21 @@ class BasePage:
         el.clear()
         el.send_keys(text)
 
+    @allure.step("JS click element")
+    def js_click(self, locator: tuple[By, str]):
+        el = self.wait.until(EC.presence_of_element_located(locator))
+        self.driver.execute_script("arguments[0].click();", el)
+
     @allure.step("Wait visible")
     def visible(self, locator: tuple[By, str]):
         return self.wait.until(EC.visibility_of_element_located(locator))
+
+    def is_visible(self, locator: tuple[By, str]) -> bool:
+        try:
+            self.wait.until(EC.visibility_of_element_located(locator))
+            return True
+        except Exception:
+            return False
 
     @allure.step("Exists check")
     def exists(self, locator: tuple[By, str]):
@@ -52,6 +62,10 @@ class BasePage:
             return True
         except Exception:
             return False
+
+    @allure.step("Wait invisible")
+    def wait_invisible(self, locator: tuple[By, str]):
+        self.wait.until(EC.invisibility_of_element_located(locator))
 
     @allure.step("Press ESC")
     def press_escape(self):

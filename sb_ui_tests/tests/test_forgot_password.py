@@ -1,4 +1,5 @@
 import allure
+from utils.urls import BASE_URL
 from pages.login_page import LoginPage
 from pages.forgot_page import ForgotPage
 
@@ -8,7 +9,6 @@ from pages.forgot_page import ForgotPage
 class TestForgotPassword:
     @allure.title("Переход на страницу восстановления пароля")
     def test_navigate_to_forgot_password(self, driver):
-        from utils.urls import BASE_URL
         login = LoginPage(driver, BASE_URL)
         login.open_login()
         login.goto_forgot()
@@ -16,7 +16,6 @@ class TestForgotPassword:
 
     @allure.title("Ввод почты и отправка формы восстановления")
     def test_enter_email_and_submit(self, driver):
-        from utils.urls import BASE_URL
         login = LoginPage(driver, BASE_URL)
         login.open_login()
         login.goto_forgot()
@@ -27,7 +26,6 @@ class TestForgotPassword:
 
     @allure.title("Кнопка показать/скрыть активирует поле пароля")
     def test_password_toggle_activates_field(self, driver):
-        from utils.urls import BASE_URL
         login = LoginPage(driver, BASE_URL)
         login.open_login()
         login.toggle_password_visibility()
